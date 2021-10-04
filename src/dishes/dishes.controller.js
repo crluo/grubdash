@@ -11,7 +11,6 @@ const nextId = require("../utils/nextId");
 function hasValidInput(req, res, next) {
     const { data = {} } = req.body;
     const VALID_FIELDS = ["name", "description", "price", "image_url"]
-    
     for (let field of VALID_FIELDS) {
         if (!data[field]) {
             next({
@@ -20,7 +19,6 @@ function hasValidInput(req, res, next) {
             });
         }
     }
-
     if (data.price < 0 || typeof data.price !== "number") {
         next({
             status: 400,
@@ -28,11 +26,24 @@ function hasValidInput(req, res, next) {
             `,
         });
     }
-    res.locals.dish = req.body.data;
+    res.locals.newDish = data;
     next();
 }
 
-// TODO: Implement the /dishes handlers needed to make the tests pass
+function isValidDish(req, res, next) {
+    const dishId = req.params.dishId;
+    const foundDish = dishes.find((dish) => dish.id === dishId);
+    if (foundDish) {
+        res.locals.dish = foundDish;
+        next();
+    }
+    next({
+        status: 404,
+        message: `Dish does not exist: ${dishId}`
+    });
+}
+
+// "/dishes" handlers
 const list = (req, res) => {
     res.json({ data: dishes });
 };
@@ -41,14 +52,20 @@ const create = (req, res, next) => {
     const newId = nextId();
     const newDish = {
         id: newId,
-        ...res.locals.dish,
+        ...res.locals.newDish,
     };
     dishes.push(newDish);
     res.status(201).json({ data: newDish });
 }
 
+// "/dishes/:dishId" handlers
+const read = (req, res) => {
+    res.json({ data: res.locals.dish });
+}
+
 // exports
 module.exports = {
     list,
-    create: [hasValidInput, create],    
+    create: [hasValidInput, create],
+    read: [isValidDish, read],
 }
