@@ -67,6 +67,16 @@ function isOrderStatusValid(req, res, next) {
     next();
 }
 
+function isDeleteStatusValid(req, res, next) {
+    if (res.locals.order.status !== "pending") {
+        next({
+            status: 400,
+            message: `An order cannot be deleted unless it is pending`
+        })
+    }
+    next();
+}
+
 function isOrderIdMatch(req, res, next) {
     const { data = {} } = req.body;
     const { id } = data;
@@ -111,9 +121,17 @@ const update = (req, res) => {
     res.json({data: updatedOrder});
 }
 
+const destroy = (req, res) => {
+    const index = orders.findIndex((order) => order.id === res.locals.orderId);
+    const deletedOrder = orders.splice(index, 1);
+    res.sendStatus(204);
+}
+
+//exports
 module.exports = {
     list,
     create: [hasValidInput, create],
     read: [isValidOrder, read],
     update: [isValidOrder, hasValidInput, isOrderIdMatch, isOrderStatusValid, update],
+    destroy: [isValidOrder, isDeleteStatusValid, destroy],
 }
