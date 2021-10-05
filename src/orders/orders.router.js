@@ -6,14 +6,14 @@ const controller = require("./orders.controller")
 router
     .route("/:orderId")
     .get(controller.read)
-    // .put()
+    .put(controller.update)
     // .delete()
     .all(methodNotAllowed);
 
 router
     .route("/")
     .get(controller.list)
-    // .post()
+    .post(controller.create)
     .all(methodNotAllowed);
 
 module.exports = router;
