@@ -1,9 +1,9 @@
 const path = require("path");
 
-// Use the existing order data
+// existing order data
 const orders = require(path.resolve("src/data/orders-data"));
 
-// Use this function to assigh ID's when necessary
+// function to assign the next id
 const nextId = require("../utils/nextId");
 
 // middleware functions
