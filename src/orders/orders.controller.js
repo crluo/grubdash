@@ -19,14 +19,13 @@ function hasValidInput(req, res, next) {
             });
         }
     }
-    // need to implement array type check even though a json object is always returned
     if (!Array.isArray(dishes) || dishes.length == 0) {
         next({
             status: 400,
             message: `Order must include at least one dish`,
         });
     }
-    
+
     for ( const [index, dish] of dishes.entries() ) {
         if (!dish.quantity || dish.quantity <= 0 || typeof dish.quantity !== "number") {
             next({
@@ -35,9 +34,6 @@ function hasValidInput(req, res, next) {
             })
         }
     }
-    
-    
-    
     res.locals.newOrder = data;
     next();
 }
@@ -54,6 +50,35 @@ function isValidOrder(req, res, next) {
         status: 404,
         message: `Order does not exist: ${orderId}`
     });
+}
+
+function isOrderStatusValid(req, res, next) {
+    if (res.locals.newOrder.status !== "pending") {
+        next({
+            status: 400,
+            message: `Order must have a status of pending, preparing, out-for-delivery, delivered`
+        })
+    } else if (res.locals.newOrder.status === "delivered") {
+        next({
+            status: 400,
+            message: `A delivered order cannot be changed`
+        })
+    }
+    next();
+}
+
+function isOrderIdMatch(req, res, next) {
+    const { data = {} } = req.body;
+    const { id } = data;
+    if (!id) {
+        next();
+    } else if (id !== res.locals.orderId) {
+        next({
+            status: 400,
+            message: `Order id does not match route id. Order: ${id}, Route: ${res.locals.orderId}.`
+        })
+    }
+    next();
 }
 
 // "/orders" handlers
@@ -77,18 +102,18 @@ const read = (req, res) => {
 }
 
 const update = (req, res) => {
-    const index = dishes.findIndex((dish) => dish.id === res.locals.orderId);
+    const index = orders.findIndex((order) => order.id === res.locals.orderId);
     const updatedOrder = {
-        id: res.locals.orderId,
-        ...res.locals.order
+        ...res.locals.newOrder,
+        id: res.locals.orderId
     }
-    dishes[index] = updatedOrder;
-    res.json(updatedOrder);
+    Object.assign(res.locals.order, updatedOrder);
+    res.json({data: updatedOrder});
 }
 
 module.exports = {
     list,
     create: [hasValidInput, create],
     read: [isValidOrder, read],
-    update: [hasValidInput, isValidOrder, update],
+    update: [isValidOrder, hasValidInput, isOrderIdMatch, isOrderStatusValid, update],
 }
